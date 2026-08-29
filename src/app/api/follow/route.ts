@@ -100,13 +100,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const followers = await prisma.follow.findMany({
+    // Get follower profiles
+    const follows = await prisma.follow.findMany({
       where: {
         ...(targetType === 'personal' && { targetPersonalProfileId: targetId }),
         ...(targetType === 'business' && { targetBusinessPageId: targetId }),
       },
-      include: {
-        followerProfile: {
+    });
+
+    // Fetch follower profiles separately
+    const followers = await Promise.all(
+      follows.map(async f => ({
+        id: f.id,
+        followerId: f.followerId,
+        profile: await prisma.personalProfile.findUnique({
+          where: { userId: f.followerId },
           select: {
             userId: true,
             username: true,
@@ -115,9 +123,9 @@ export async function GET(request: NextRequest) {
             headline: true,
             verified: true,
           },
-        },
-      },
-    });
+        }),
+      }))
+    );
 
     return NextResponse.json({
       success: true,

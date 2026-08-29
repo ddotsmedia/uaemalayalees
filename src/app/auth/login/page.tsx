@@ -17,6 +17,19 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    // Basic validation
+    if (!email || !email.includes('@')) {
+      setError('Please enter a valid email');
+      setLoading(false);
+      return;
+    }
+
+    if (!phone || phone.replace(/\D/g, '').length < 10) {
+      setError('Please enter a valid phone number (at least 10 digits)');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -35,6 +48,7 @@ export default function LoginPage() {
       setStep('otp');
     } catch (err) {
       setError('Network error. Please try again.');
+      console.error('Signup error:', err);
     } finally {
       setLoading(false);
     }
