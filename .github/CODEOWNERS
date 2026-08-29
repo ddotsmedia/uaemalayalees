@@ -1,0 +1,6 @@
+# Global owners
+* @mammikutty
+
+# Specific paths
+/src/app/api/admin/ @mammikutty
+/prisma/ @mammikutty
