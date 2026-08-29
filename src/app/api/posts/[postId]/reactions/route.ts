@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { notifyPostLike } from '@/lib/notifications';
 
 const VALID_REACTION_TYPES = ['like', 'heart', 'laugh', 'thinking', 'clapping', 'fire', 'rocket'];
 
@@ -72,6 +73,11 @@ export async function POST(
         type,
       },
     });
+
+    // Trigger notification for post author
+    if (type === 'like') {
+      await notifyPostLike(postId, authorId);
+    }
 
     return NextResponse.json(
       { success: true, data: reaction },
