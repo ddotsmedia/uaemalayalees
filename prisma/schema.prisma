@@ -83,6 +83,7 @@ model User {
   payments          Payment[]
   moderationFlags   ModerationFlag[]
   dailyAnalytics    DailyAnalytics[]
+  refreshTokens     RefreshToken[]
 
   @@index([email])
   @@index([phone])
@@ -632,4 +633,17 @@ model DailyAnalytics {
   @@unique([userId, date])
   @@index([userId, date])
   @@index([date])
+}
+
+model RefreshToken {
+  id              String   @id @default(cuid())
+  userId          String
+  token           String   @unique
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
