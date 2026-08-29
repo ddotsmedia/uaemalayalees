@@ -77,6 +77,12 @@ model User {
   postViews         PostView[]
   notificationsReceived Notification[] @relation("NotificationRecipient")
   notificationsCreated  Notification[] @relation("NotificationActor")
+  reviewsCreated    Review[] @relation("ReviewAuthor")
+  reviewsApproved   Review[] @relation("ReviewApprover")
+  subscriptionTier  SubscriptionTier?
+  payments          Payment[]
+  moderationFlags   ModerationFlag[]
+  dailyAnalytics    DailyAnalytics[]
 
   @@index([email])
   @@index([phone])
@@ -185,6 +191,8 @@ model BusinessPage {
   // Relationships
   followers       Follow[] @relation("FollowedBusinessPage")
   reports         Report[] @relation("TargetBusinessPage")
+  sponsoredPosts  SponsoredPost[]
+  dailyAnalytics  DailyAnalytics[]
 
   @@index([ownerId])
   @@index([categoryId])
@@ -396,6 +404,8 @@ model Post {
   reactions       Reaction[]
   views           PostView[]
   notifications   Notification[]
+  moderationFlags ModerationFlag[]
+  sponsoredPost   SponsoredPost?
 
   @@index([authorId, createdAt])
   @@index([createdAt])
@@ -419,6 +429,7 @@ model Comment {
   replies         Comment[] @relation("CommentReplies")
   reactions       Reaction[]
   notifications   Notification[]
+  moderationFlags ModerationFlag[]
 
   @@index([postId, createdAt])
   @@index([authorId])
@@ -480,4 +491,145 @@ model Notification {
   @@index([recipientId, createdAt])
   @@index([read])
   @@index([actorId])
+}
+
+// ============================================================================
+// REVIEWS & RATINGS
+// ============================================================================
+
+model Review {
+  id              String   @id @default(cuid())
+  targetId        String   // userId (personal) or businessId
+  targetType      String   // profile | business
+  authorId        String
+  rating          Int      // 1-5 stars
+  content         String   @db.Text
+  approved        Boolean  @default(false)
+  approvedBy      String?  // Admin/moderator who approved
+  approvedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  author          User     @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  approver        User?    @relation("ReviewApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+  moderationFlags ModerationFlag[]
+
+  @@index([targetId, targetType])
+  @@index([authorId])
+  @@index([approved, createdAt])
+  @@index([targetId, approved, rating])
+}
+
+model ModerationFlag {
+  id              String   @id @default(cuid())
+  postId          String?
+  commentId       String?
+  reviewId        String?
+  type            String   // spam | nsfw | abuse
+  score           Float    @default(0.0) // 0.0-1.0 confidence
+  reason          String   @db.Text
+  status          String   @default("pending") // pending | approved | dismissed
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  post            Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment         Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  review          Review? @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  reviewer        User? @relation(fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([type, status])
+  @@index([status, createdAt])
+  @@index([postId])
+  @@index([commentId])
+  @@index([reviewId])
+}
+
+// ============================================================================
+// PREMIUM TIERS
+// ============================================================================
+
+model SubscriptionTier {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  tier            String   @default("free") // free | premium_personal | premium_business
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  status          String   @default("active") // active | cancelled | pending
+  startDate       DateTime @default(now())
+  renewalDate     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tier])
+  @@index([status])
+  @@index([renewalDate])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  userId          String
+  amount          Float
+  currency        String   @default("AED")
+  stripePaymentId String?  @unique
+  status          String   @default("pending") // pending | succeeded | failed
+  description     String
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// ADS & SPONSORSHIP
+// ============================================================================
+
+model SponsoredPost {
+  id              String   @id @default(cuid())
+  postId          String   @unique
+  businessId      String
+  campaignId      String
+  budget          Float
+  dailyBudget     Float?
+  status          String   @default("active") // active | paused | ended
+  impressions     Int      @default(0)
+  clicks          Int      @default(0)
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  business        BusinessPage @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// ANALYTICS
+// ============================================================================
+
+model DailyAnalytics {
+  id              String   @id @default(cuid())
+  userId          String
+  businessId      String?
+  date            DateTime
+  followers       Int      @default(0)
+  newFollowers    Int      @default(0)
+  views           Int      @default(0)
+  engagementScore Float    @default(0.0)
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  business        BusinessPage? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@index([date])
 }
