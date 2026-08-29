@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { checkAndAutoSuspend } from '@/lib/moderation';
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,8 +47,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Check if should auto-suspend
+    const suspended = await checkAndAutoSuspend(
+      targetId,
+      targetType as 'profile' | 'business'
+    );
+
+    if (suspended) {
+      console.log(`[MODERATION] Auto-suspended ${targetType} ${targetId} after 5+ reports`);
+    }
+
     return NextResponse.json(
-      { success: true, data: report },
+      {
+        success: true,
+        data: report,
+        autoSuspended: suspended,
+      },
       { status: 201 }
     );
   } catch (error) {
