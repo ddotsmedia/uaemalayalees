@@ -71,6 +71,12 @@ model User {
   auditLogs         AuditLog[]
   sessions          Session[]
   accounts          Account[]
+  posts             Post[]
+  comments          Comment[]
+  reactions         Reaction[]
+  postViews         PostView[]
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsCreated  Notification[] @relation("NotificationActor")
 
   @@index([email])
   @@index([phone])
@@ -369,5 +375,105 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([resource])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// POSTS & ENGAGEMENT
+// ============================================================================
+
+model Post {
+  id              String   @id @default(cuid())
+  authorId        String
+  content         String   @db.Text
+  media           Json? // [{ url: string, type: 'image'|'video' }]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  author          User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments        Comment[]
+  reactions       Reaction[]
+  views           PostView[]
+  notifications   Notification[]
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model Comment {
+  id              String   @id @default(cuid())
+  postId          String
+  authorId        String
+  parentCommentId String? // For replies
+  content         String   @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author          User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentComment   Comment? @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[] @relation("CommentReplies")
+  reactions       Reaction[]
+  notifications   Notification[]
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentCommentId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model Reaction {
+  id              String   @id @default(cuid())
+  postId          String?
+  commentId       String?
+  authorId        String
+  type            String   @default("like") // like, heart, laugh, thinking, clapping, fire, rocket
+  createdAt       DateTime @default(now())
+
+  post            Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment         Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  author          User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, commentId, authorId, type])
+  @@index([postId])
+  @@index([commentId])
+  @@index([authorId])
+}
+
+model PostView {
+  id              String   @id @default(cuid())
+  postId          String
+  viewerId        String? // null = anonymous
+  createdAt       DateTime @default(now())
+
+  post            Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  viewer          User? @relation(fields: [viewerId], references: [id], onDelete: SetNull)
+
+  @@unique([postId, viewerId, createdAt])
+  @@index([postId])
+  @@index([viewerId])
+}
+
+model Notification {
+  id              String   @id @default(cuid())
+  recipientId     String
+  type            String   // connection_requested, connection_accepted, post_liked, post_commented, reply_to_comment, user_followed, profile_viewed
+  actorId         String
+  postId          String?
+  commentId       String?
+  read            Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  recipient       User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor           User     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  post            Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment         Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([read])
   @@index([createdAt])
 }
