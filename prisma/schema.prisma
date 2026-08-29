@@ -1,0 +1,373 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  GUEST
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum VerificationType {
+  EMAIL
+  PHONE
+  TRADELIT
+}
+
+enum ReportStatus {
+  NEW
+  REVIEWING
+  ACTIONED
+  DISMISSED
+}
+
+enum ReportReason {
+  FAKE_PROFILE
+  SPAM
+  INAPPROPRIATE
+  OTHER
+}
+
+// ============================================================================
+// CORE USER
+// ============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  phone         String    @unique
+  emailVerified Boolean   @default(false)
+  phoneVerified Boolean   @default(false)
+  role          UserRole  @default(USER)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  personalProfile   PersonalProfile?
+  businessPages     BusinessPage[]
+  businessTeamMember BusinessTeamMember?
+  verifications     Verification[]
+  reportsCreated    Report[]     @relation("ReporterUser")
+  auditLogs         AuditLog[]
+  sessions          Session[]
+  accounts          Account[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============================================================================
+// PERSONAL PROFILE
+// ============================================================================
+
+model PersonalProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  username        String   @unique
+  name            String
+  headline        String?
+  bio             String?  @db.Text
+  photoUrl        String?
+  nativePlace     String? // Kerala district name
+  offersServices  Boolean  @default(false)
+  links           Json? // { linkedin: "...", twitter: "...", website: "..." }
+  verified        Boolean  @default(false)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId      String?
+  location        Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  locationId      String?
+
+  // Relationships
+  followers       Follow[] @relation("FollowedPersonalProfile")
+  following       Follow[] @relation("FollowerPersonalProfile")
+  connectionsSent Connection[] @relation("InitiatorPersonalProfile")
+  connectionsReceived Connection[] @relation("ReceiverPersonalProfile")
+  reports         Report[] @relation("TargetPersonalProfile")
+
+  @@index([userId])
+  @@index([username])
+  @@index([categoryId])
+  @@index([locationId])
+}
+
+// ============================================================================
+// BUSINESS PAGE
+// ============================================================================
+
+model BusinessPage {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  logoUrl         String?
+  coverUrl        String?
+  description     String?  @db.Text
+  contact         Json? // { email, phone, whatsapp, website }
+  hours           Json? // { mon: { open, close }, ... }
+  locations       Json? // [{ emirate, city, area, address, coordinates: { lat, lng } }]
+  verified        Boolean  @default(false)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  ownerId         String
+  owner           User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  category        Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  categoryId      String
+
+  // Team
+  teamMembers     BusinessTeamMember[]
+
+  // Relationships
+  followers       Follow[] @relation("FollowedBusinessPage")
+  reports         Report[] @relation("TargetBusinessPage")
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model BusinessTeamMember {
+  id              String   @id @default(cuid())
+  businessId      String
+  userId          String   @unique
+  role            String   @default("admin") // admin, manager, employee
+  createdAt       DateTime @default(now())
+
+  business        BusinessPage @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
+}
+
+// ============================================================================
+// CATEGORIES & LOCATIONS
+// ============================================================================
+
+model Category {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  icon            String? // Emoji
+  type            String   @default("personal") // personal | business
+  active          Boolean  @default(true)
+  ordering        Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  personalProfiles PersonalProfile[]
+  businessPages   BusinessPage[]
+
+  @@index([slug])
+  @@index([type])
+}
+
+model Location {
+  id              String   @id @default(cuid())
+  emirate         String
+  city            String
+  area            String
+  centerLat       Float? // PostGIS Point center latitude
+  centerLng       Float? // PostGIS Point center longitude
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  personalProfiles PersonalProfile[]
+
+  @@unique([emirate, city, area])
+  @@index([emirate])
+  @@index([city])
+  @@index([area])
+}
+
+// ============================================================================
+// RELATIONSHIPS (Follow, Connect)
+// ============================================================================
+
+model Follow {
+  id              String   @id @default(cuid())
+  followerId      String
+  followerProfile PersonalProfile? @relation("FollowerPersonalProfile", fields: [followerId], references: [userId], onDelete: Cascade)
+
+  targetPersonalProfileId   String?
+  targetPersonalProfile     PersonalProfile? @relation("FollowedPersonalProfile", fields: [targetPersonalProfileId], references: [userId], onDelete: Cascade)
+
+  targetBusinessPageId      String?
+  targetBusinessPage        BusinessPage? @relation("FollowedBusinessPage", fields: [targetBusinessPageId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+
+  @@unique([followerId, targetPersonalProfileId, targetBusinessPageId])
+  @@index([followerId])
+  @@index([targetPersonalProfileId])
+  @@index([targetBusinessPageId])
+}
+
+model Connection {
+  id              String   @id @default(cuid())
+  initiatorId     String
+  receiverId      String
+  status          ConnectionStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  initiator       PersonalProfile @relation("InitiatorPersonalProfile", fields: [initiatorId], references: [userId], onDelete: Cascade)
+  receiver        PersonalProfile @relation("ReceiverPersonalProfile", fields: [receiverId], references: [userId], onDelete: Cascade)
+
+  @@unique([initiatorId, receiverId])
+  @@index([initiatorId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+// ============================================================================
+// MEDIA
+// ============================================================================
+
+model Media {
+  id              String   @id @default(cuid())
+  key             String   @unique // R2 object key
+  url             String
+  mimeType        String
+  size            Int
+  ownerId         String
+  ownerType       String   @default("user") // user | business
+  createdAt       DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([ownerType])
+}
+
+// ============================================================================
+// VERIFICATION
+// ============================================================================
+
+model Verification {
+  id              String   @id @default(cuid())
+  userId          String
+  type            VerificationType
+  verified        Boolean  @default(false)
+  verifiedAt      DateTime?
+  token           String?  @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([type])
+}
+
+// ============================================================================
+// MODERATION
+// ============================================================================
+
+model Report {
+  id              String   @id @default(cuid())
+  reporterId      String
+  reason          ReportReason
+  message         String?  @db.Text
+  status          ReportStatus @default(NEW)
+  actionTakenAt   DateTime?
+  actionTakenBy   String? // Admin/Moderator ID
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reporter        User     @relation("ReporterUser", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  targetPersonalProfileId String?
+  targetPersonalProfile   PersonalProfile? @relation("TargetPersonalProfile", fields: [targetPersonalProfileId], references: [userId], onDelete: Cascade)
+
+  targetBusinessPageId    String?
+  targetBusinessPage      BusinessPage? @relation("TargetBusinessPage", fields: [targetBusinessPageId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([status])
+  @@index([reason])
+  @@index([targetPersonalProfileId])
+  @@index([targetBusinessPageId])
+}
+
+// ============================================================================
+// AUDIT LOG
+// ============================================================================
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  userId          String
+  action          String // create, update, delete, etc.
+  resource        String // profile, business, category, etc.
+  resourceId      String
+  changes         Json?  // { before: {...}, after: {...} }
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+}

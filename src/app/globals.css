@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Light mode (default) */
+  :root {
+    --color-primary: #14958a;
+    --color-primary-light: #2db5a7;
+    --color-primary-dark: #0d5d54;
+    --color-accent: #d9a441;
+    --color-accent-light: #e5b85a;
+    --color-accent-dark: #c49535;
+    --color-bg: #ffffff;
+    --color-bg-secondary: #f5f5f5;
+    --color-text: #111111;
+    --color-text-secondary: #666666;
+    --color-border: #e5e5e5;
+
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 64px;
+
+    --radius-none: 0;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+  }
+
+  /* Dark mode */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-bg: #0f0f0f;
+      --color-bg-secondary: #1a1a1a;
+      --color-text: #eeeeee;
+      --color-text-secondary: #999999;
+      --color-border: #333333;
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --color-bg: #0f0f0f;
+    --color-bg-secondary: #1a1a1a;
+    --color-text: #eeeeee;
+    --color-text-secondary: #999999;
+    --color-border: #333333;
+  }
+
+  :root[data-theme='light'] {
+    --color-bg: #ffffff;
+    --color-bg-secondary: #f5f5f5;
+    --color-text: #111111;
+    --color-text-secondary: #666666;
+    --color-border: #e5e5e5;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-bg text-text;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-border bg-bg px-4 py-2 font-medium text-text transition-colors hover:bg-bg-secondary disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 font-medium text-white transition-colors hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .card {
+    @apply rounded-lg border border-border bg-bg p-4 shadow-sm transition-all hover:shadow-md;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary;
+  }
+
+  .badge-accent {
+    @apply inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent;
+  }
+
+  .input {
+    @apply rounded-lg border border-border bg-bg px-3 py-2 text-text placeholder-text-secondary transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+  }
+
+  .container-content {
+    @apply mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8;
+  }
+}
