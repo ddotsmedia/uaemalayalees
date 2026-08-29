@@ -86,6 +86,22 @@ AuditLog (for compliance)
 - [x] Form validation: schemas for signup, profile, business, trade license
 - [x] Error utilities: ApiError, error messages, error handling
 
+### ✅ Complete (Phase 3.A-F)
+- [x] Post/status updates: create, edit, delete (soft-delete), feed
+- [x] Post validation: 500-char limit, 3-image max, 15-min edit window
+- [x] Comments & nested replies: create, edit, delete, 300-char limit
+- [x] Reaction system: 7 emoji types (like, heart, laugh, thinking, clapping, fire, rocket)
+- [x] Reaction toggle: click to add, click again to remove, switch types
+- [x] Notifications: 7 types (connection, comment, like, follow, reply, etc)
+- [x] Notification API: fetch, mark as read, delete, bulk actions
+- [x] Notification deduplication: prevent spam (1-hour window)
+- [x] Notification triggers: auto-create on events (post like, comment, follow)
+- [x] View tracking: daily-deduplicated view count per post
+- [x] Engagement scoring: formula (likes×1 + comments×2 + replies×1.5 + views×0.1)
+- [x] Engagement levels: new, regular, active, highly_engaged
+- [x] Database optimization: composite indexes on frequently queried columns
+- [x] Test structure: test file templates for posts, comments, reactions
+
 ### ⏳ TODO (Phase 2+)
 - [ ] Photo upload to R2 (integration)
 - [ ] Email OTP via Resend (integration)

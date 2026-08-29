@@ -397,9 +397,10 @@ model Post {
   views           PostView[]
   notifications   Notification[]
 
-  @@index([authorId])
+  @@index([authorId, createdAt])
   @@index([createdAt])
   @@index([deletedAt])
+  @@index([authorId, deletedAt])
 }
 
 model Comment {
@@ -419,11 +420,11 @@ model Comment {
   reactions       Reaction[]
   notifications   Notification[]
 
-  @@index([postId])
+  @@index([postId, createdAt])
   @@index([authorId])
   @@index([parentCommentId])
-  @@index([createdAt])
-  @@index([deletedAt])
+  @@index([createdAt, deletedAt])
+  @@index([postId, deletedAt])
 }
 
 model Reaction {
@@ -439,9 +440,10 @@ model Reaction {
   author          User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@unique([postId, commentId, authorId, type])
-  @@index([postId])
+  @@index([postId, createdAt])
   @@index([commentId])
   @@index([authorId])
+  @@index([postId, type])
 }
 
 model PostView {
@@ -454,8 +456,9 @@ model PostView {
   viewer          User? @relation(fields: [viewerId], references: [id], onDelete: SetNull)
 
   @@unique([postId, viewerId, createdAt])
-  @@index([postId])
+  @@index([postId, createdAt])
   @@index([viewerId])
+  @@index([createdAt])
 }
 
 model Notification {
@@ -473,7 +476,8 @@ model Notification {
   post            Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
   comment         Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
-  @@index([recipientId])
+  @@index([recipientId, read, createdAt])
+  @@index([recipientId, createdAt])
   @@index([read])
-  @@index([createdAt])
+  @@index([actorId])
 }
