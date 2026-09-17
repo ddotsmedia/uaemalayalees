@@ -58,49 +58,159 @@
     --color-border: #e5e5e5;
   }
 
-  * {
-    @apply border-border;
-  }
-
   html {
-    @apply scroll-smooth;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-bg text-text;
+    background-color: var(--color-bg);
+    color: var(--color-text);
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-primary);
+    padding: 8px 16px;
+    font-weight: 500;
+    color: white;
+    transition: background-color 0.2s;
+    cursor: pointer;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary-dark);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-border bg-bg px-4 py-2 font-medium text-text transition-colors hover:bg-bg-secondary disabled:opacity-50 disabled:cursor-not-allowed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    padding: 8px 16px;
+    font-weight: 500;
+    color: var(--color-text);
+    transition: background-color 0.2s;
+    cursor: pointer;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--color-bg-secondary);
+  }
+
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .btn-accent {
-    @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 font-medium text-white transition-colors hover:bg-accent-dark disabled:opacity-50 disabled:cursor-not-allowed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background-color: var(--color-accent);
+    padding: 8px 16px;
+    font-weight: 500;
+    color: white;
+    transition: background-color 0.2s;
+    cursor: pointer;
+  }
+
+  .btn-accent:hover {
+    background-color: var(--color-accent-dark);
+  }
+
+  .btn-accent:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .card {
-    @apply rounded-lg border border-border bg-bg p-4 shadow-sm transition-all hover:shadow-md;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    padding: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 
   .badge {
-    @apply inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary;
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-full);
+    background-color: rgba(20, 149, 138, 0.1);
+    padding: 4px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-primary);
   }
 
   .badge-accent {
-    @apply inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent;
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-full);
+    background-color: rgba(217, 164, 65, 0.1);
+    padding: 4px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-accent);
   }
 
   .input {
-    @apply rounded-lg border border-border bg-bg px-3 py-2 text-text placeholder-text-secondary transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    padding: 8px 12px;
+    color: var(--color-text);
+    transition: border-color 0.2s;
+  }
+
+  .input::placeholder {
+    color: var(--color-text-secondary);
+  }
+
+  .input:focus {
+    border-color: var(--color-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(20, 149, 138, 0.2);
   }
 
   .container-content {
-    @apply mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8;
+    max-width: 56rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 32px;
+    padding-bottom: 32px;
+  }
+
+  @media (min-width: 640px) {
+    .container-content {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-content {
+      padding-left: 32px;
+      padding-right: 32px;
+    }
   }
 }
