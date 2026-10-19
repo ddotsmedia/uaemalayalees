@@ -42,3 +42,9 @@ Thumbs.db
 
 # Prisma
 prisma/migrations/
+
+# Local-only files (credentials and working docs; never commit)
+fix-admin-login.sh
+10_CLAUDE_CODE_PROMPTS_COMPLETE_WITH_EMBEDDED_RULES.md
+files/
+files.zip
