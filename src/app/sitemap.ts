@@ -1,25 +1,35 @@
 import { MetadataRoute } from 'next';
+import { unstable_cache } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { BUSINESS_CATEGORIES, EMIRATES } from '@/lib/constants';
 
-export const revalidate = 3600; // 1 hour
+// Rendered per request so the build never queries the database; the
+// queries below are cached for 1 hour instead.
+export const dynamic = 'force-dynamic';
+
+const getSitemapRows = unstable_cache(
+  async () =>
+    Promise.all([
+      prisma.personalProfile.findMany({
+        where: { active: true },
+        select: { username: true, updatedAt: true },
+        take: 10000,
+      }),
+      prisma.businessPage.findMany({
+        where: { active: true },
+        select: { slug: true, updatedAt: true },
+        take: 10000,
+      }),
+    ]),
+  ['sitemap-rows'],
+  { revalidate: 3600 }
+);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://uaemalayalees.com';
 
   // Fetch dynamic URLs
-  const [profiles, businesses] = await Promise.all([
-    prisma.personalProfile.findMany({
-      where: { active: true },
-      select: { username: true, updatedAt: true },
-      take: 10000,
-    }),
-    prisma.businessPage.findMany({
-      where: { active: true },
-      select: { slug: true, updatedAt: true },
-      take: 10000,
-    }),
-  ]);
+  const [profiles, businesses] = await getSitemapRows();
 
   const profileUrls = profiles.map((p) => ({
     url: `${baseUrl}/profile/${p.username}`,
